@@ -1,6 +1,5 @@
 package com.example.marketOrders.specification;
 
-import com.example.marketOrders.entity.Order;
 import com.example.marketOrders.entity.Product;
 import org.springframework.data.jpa.domain.Specification;
 
