@@ -32,7 +32,7 @@ public class Product {
     @Column(length = 500)
     private String imageUrl;
 
-    @ManyToMany(mappedBy = "products")
-    private List<Order> orders;
+    @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<OrderItem> items;
 
 }
