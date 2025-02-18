@@ -35,4 +35,8 @@ public class Order {
     @JoinColumn(name = "customer_id", nullable = false)
     private Customer customer;
 
+    @Column(nullable = false)
+    private boolean isDeleted = false;
+
+
 }

@@ -4,7 +4,10 @@ package com.example.marketOrders.service;
 import com.example.marketOrders.entity.Customer;
 import com.example.marketOrders.repository.CustomerRepository;
 import com.example.marketOrders.specification.CustomerSpecification;
+import com.example.marketOrders.validator.CustomerValidator;
 import jakarta.persistence.EntityNotFoundException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -13,6 +16,8 @@ import org.springframework.web.server.ResponseStatusException;
 
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 
 
@@ -20,44 +25,27 @@ import java.util.Optional;
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
+    private final CustomerValidator customerValidator;
+    private static final Logger logger = LoggerFactory.getLogger(CustomerService.class);
 
     @Autowired
-    public CustomerService(CustomerRepository customerRepository) {
+    public CustomerService(CustomerRepository customerRepository, CustomerValidator customerValidator) {
         this.customerRepository = customerRepository;
+        this.customerValidator = customerValidator;
+
     }
 
     // Сохранение нового пользователя
     public Customer save(Customer customer) {
-        String number = numberTelephoneValidationRussianFederation(customer.getPhone());
-        String mail = mailValidation(customer.getEmail());
+        customerValidator.validatePhone(customer.getPhone());
+        customerValidator.validationEmail(customer.getEmail());
 
         //GOTO
         // думаю нужно добавить проверку по тому, встречается ли такой mail и номер телефона в базе, только потом сохранять
 
-        Customer customerUp = new Customer(customer.getId(), customer.getName(), mail
-                , number, customer.getOrders());
+        Customer customerUp = new Customer(customer.getId(), customer.getName(), customer.getEmail()
+                , customer.getPhone(), customer.getOrders());
         return customerRepository.save(customerUp);
-    }
-
-    // Валидация номера
-    // представим что я хочу чтобы все номера были в формате 79870072088
-    // так же было бы здорово если бы пользователю из бэка приходила информация об ошибках ("
-    // реализовал в package controllerExceptionAdvice class - GlobalExceptionHandler method - handleIllegalArgumentException
-    // возвращаемое значение String оставлю для возможности корректировки номера под формат
-    public String numberTelephoneValidationRussianFederation(String number) {
-        if (number == null || number.isEmpty()) throw new IllegalArgumentException("Неверное количество цифр в номере");
-        if (number.length() != 11) throw new IllegalArgumentException("Неверное количество цифр в номере");
-        if (number.matches("^7\\d{10}$"))
-            throw new IllegalArgumentException("Номер должен начинаться с 7 и содержать только 11 цифр");
-        if (!number.matches("\\d+")) throw new IllegalArgumentException("Номер должен содержать только цифры");
-        return number;
-    }
-
-    // Валидация mail
-    public String mailValidation(String mail) {
-        if (!mail.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"))
-            throw new IllegalArgumentException("Invalid email format");
-        return mail;
     }
 
     // Поиск по id
@@ -78,22 +66,51 @@ public class CustomerService {
         return customerRepository.findByName(name);
     }
 
-    // Обновление данных клиента // я на самом деле сомневаюсь в данном месте,
-    // Разве мы когда обновляем передаем это как сущность у которой можем взять id?
-    public String updateCustomer(Customer customer, Long id) {
-        if (id == null) throw new IllegalArgumentException("Customer ID must not be null for an update");
-// поиск в базе с таким id
-        var customer1 = customerRepository.findById(id).orElseThrow(() ->
-                new EntityNotFoundException("Customer with" +
-                        "id (" + id + ") not found!"));
+    // метод доработан, улучшена защита от удаления нужных данных
+    // Добавлено логирование
+    @Transactional
+    public Customer updateCustomer(Long id, Map<String, Object> updates) {
 
-        if (customer.getEmail() != null) customer1.setEmail(mailValidation(customer.getEmail()));
-        if (customer.getName() != null) customer1.setName(customer.getName());
-        if (customer.getPhone() != null) customer1
-                .setPhone(numberTelephoneValidationRussianFederation(customer.getPhone()));
-        if (customer.getOrders() != null && customer.getOrders().isEmpty()) customer1.setOrders(customer.getOrders());
-        customerRepository.save(customer1);
-        return "Customer update";
+        Customer customer = customerRepository.findById(id).orElseThrow(() -> {
+            logger.warn("Customer not found with ID: {}", id);
+            return new EntityNotFoundException("Customer not found with ID:" + id);
+        });
+
+        boolean updated = false;
+
+        // Обновление мейла решил сделать таким образом, но мне кажется он напрасно усложненным сложным
+        if (updates.containsKey("email")) {
+            Object emailObject = updates.get("email");
+            if (emailObject instanceof String) {
+                String email = (String) emailObject;
+                customerValidator.validationEmail(email);
+                customer.setEmail(email);
+            } else {
+                throw new IllegalArgumentException("invalid email format. Expected a string.");
+            }
+            updated = true;
+        }
+
+        if (updates.containsKey("name")) {
+            customer.setName((String) updates.get("name"));
+            updated = true;
+        }
+
+        if (updates.containsKey("phone")) {
+            String phone = (String) updates.get("phone");
+            customerValidator.validatePhone(phone);
+            customer.setPhone(phone);
+            updated = true;
+        }
+
+        if (!updated) {
+            logger.warn("No changes detected for customer ID: {}", id);
+        }
+
+        customerRepository.save(customer);
+        logger.info("Customer updated: ID: {} , Changes: {} ", id, updates);
+
+        return customer;
     }
 
     // Удаление пользователя по id
@@ -133,3 +150,26 @@ public class CustomerService {
 
 
 }
+
+
+/* Валидация номера - переехала в дополнительный слой customerValidation
+ представим что я хочу чтобы все номера были в формате 79870072088
+ так же было бы здорово если бы пользователю из бэка приходила информация об ошибках ("
+ реализовал в package controllerExceptionAdvice class - GlobalExceptionHandler method - handleIllegalArgumentException
+ возвращаемое значение String оставлю для возможности корректировки номера под формат
+public String numberTelephoneValidationRussianFederation(String number) {
+    if (number == null || number.isEmpty()) throw new IllegalArgumentException("Неверное количество цифр в номере");
+    if (number.length() != 11) throw new IllegalArgumentException("Неверное количество цифр в номере");
+    if (number.matches("^7\\d{10}$"))
+        throw new IllegalArgumentException("Номер должен начинаться с 7 и содержать только 11 цифр");
+    if (!number.matches("\\d+")) throw new IllegalArgumentException("Номер должен содержать только цифры");
+    return number;
+}
+    // Валидация mail
+    public String mailValidation(String mail) {
+        if (!mail.matches("^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$"))
+            throw new IllegalArgumentException("Invalid email format");
+        return mail;
+    }
+*/
+

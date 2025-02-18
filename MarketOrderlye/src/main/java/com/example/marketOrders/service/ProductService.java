@@ -16,6 +16,9 @@ import java.util.List;
 public class ProductService {
     private final ProductRepository productRepository;
 
+    // Есть такие мысли, что должен быть какой то главный экран, где это все должно быть представленно
+    // в каком то определенном порядке, плюс возможно разбито на категории
+
     @Autowired
     public ProductService(ProductRepository productRepository) {
         this.productRepository = productRepository;

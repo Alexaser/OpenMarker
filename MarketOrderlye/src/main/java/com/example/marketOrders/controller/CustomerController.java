@@ -3,6 +3,7 @@ package com.example.marketOrders.controller;
 import com.example.marketOrders.entity.Customer;
 import com.example.marketOrders.service.CustomerService;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.http.HttpStatus;
 
 import org.springframework.http.ResponseEntity;
@@ -37,8 +38,8 @@ public class CustomerController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<String> updateCustomer(@PathVariable Long id, @RequestBody Customer customer) {
-        customerService.updateCustomer(customer,id);
+    public ResponseEntity<String> updateCustomer(@PathVariable @NotNull Long id, @RequestBody Customer customer) {
+//        customerService.updateCustomer(id,customer);
         return ResponseEntity.ok("Customer update successfully");
     }
 
