@@ -1,17 +1,16 @@
 package com.example.marketOrders.controller;
 
+import com.example.marketOrders.DTO.CustomerDTO;
 import com.example.marketOrders.entity.Customer;
 import com.example.marketOrders.service.CustomerService;
 import jakarta.persistence.EntityNotFoundException;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
-import org.springframework.http.HttpStatus;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
-import java.util.Optional;
 
 
 @RestController
@@ -23,12 +22,9 @@ public class CustomerController {
         this.customerService = customerService;
     }
 
-    // Создание нового Customer и сохранение его в базу, но если так посмотреть, то метод сразу отправляет на сохранение
     @PostMapping
-    public void createCustomer(@RequestBody Customer customer) {
-        // проверка на то, что хоть что-то пришло
-        if (customer == null) throw new IllegalArgumentException("Кастомер без параметров");
-        customerService.save(customer);
+    public void createCustomer(@Valid @RequestBody CustomerDTO CustomerDTO) {
+        customerService.createNewCustomer(CustomerDTO);
     }
 
     // получение пользователя по id
@@ -56,10 +52,10 @@ public class CustomerController {
     }
 
     // GET	/customers/search?emaiel={email}	Найти клиента по email
+    // TODO: доработать метод поиск по мейлу. В целом весь класс контроллера надо типизировать
     @GetMapping("/search")
     public Customer searchMail(@RequestParam String mail) {
-        return customerService.findByEmail(mail).orElseThrow(() ->
-                new EntityNotFoundException("Customer not found with mail " + mail));
+        return customerService.findByEmail(mail);
     }
 
     @GetMapping("/orders")

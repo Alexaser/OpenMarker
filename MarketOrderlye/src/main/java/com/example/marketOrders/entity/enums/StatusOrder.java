@@ -1,4 +1,4 @@
-package com.example.marketOrders.entity;
+package com.example.marketOrders.entity.enums;
 
 public enum StatusOrder {
     NEW(0, "Создан"),

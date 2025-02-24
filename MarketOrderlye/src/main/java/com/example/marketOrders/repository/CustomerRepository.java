@@ -21,10 +21,8 @@ public interface CustomerRepository extends JpaRepository<Customer, Long>, JpaSp
 
     Optional<Customer> findByName(String name);
 
-//    Customer removeCustomerById(Long id);
+    Optional<Customer> deleteCustomerById(Long id);
 
-    void deleteCustomerById(Long id);
-//    void removeCustomerById(Long id);
 
     @Query(value = """
             Select c from Customer c
@@ -34,4 +32,8 @@ public interface CustomerRepository extends JpaRepository<Customer, Long>, JpaSp
     List<Customer> findAllByCustomerOrdersOverN(@Param("n") Integer n);
 
     List<Customer> findAll(Specification<Customer> specification);
+
+    Optional<Customer> findByPhone(String phone);
+
+
 }

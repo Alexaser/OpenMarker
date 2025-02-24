@@ -1,9 +1,9 @@
 package com.example.marketOrders.entity;
 
+import com.example.marketOrders.entity.enums.StatusOrder;
 import jakarta.persistence.*;
 import lombok.*;
 
-import java.util.HashMap;
 import java.util.List;
 
 

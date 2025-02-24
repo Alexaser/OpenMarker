@@ -1,10 +1,10 @@
 package com.example.marketOrders.service;
 
 
+import com.example.marketOrders.DTO.CustomerDTO;
 import com.example.marketOrders.entity.Customer;
 import com.example.marketOrders.repository.CustomerRepository;
 import com.example.marketOrders.specification.CustomerSpecification;
-import com.example.marketOrders.validator.CustomerValidator;
 import jakarta.persistence.EntityNotFoundException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -16,99 +16,92 @@ import org.springframework.web.server.ResponseStatusException;
 
 
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
-import java.util.Optional;
-
 
 @Service
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
-    private final CustomerValidator customerValidator;
     private static final Logger logger = LoggerFactory.getLogger(CustomerService.class);
 
     @Autowired
-    public CustomerService(CustomerRepository customerRepository, CustomerValidator customerValidator) {
+    public CustomerService(CustomerRepository customerRepository) {
         this.customerRepository = customerRepository;
-        this.customerValidator = customerValidator;
-
     }
 
-    // Сохранение нового пользователя
-    public Customer save(Customer customer) {
-        customerValidator.validatePhone(customer.getPhone());
-        customerValidator.validationEmail(customer.getEmail());
+    // За валидацию теперь ответсвенен Spring и добавлен новый слой customerDTO
+    public Customer createNewCustomer(CustomerDTO customerDTO) {
 
-        //GOTO
-        // думаю нужно добавить проверку по тому, встречается ли такой mail и номер телефона в базе, только потом сохранять
+        // Проверяю, есть ли такой емейл у другого пользователя в базе
+        if (customerRepository.findByEmail(customerDTO.getEmail()).isPresent()) {
+            logger.warn("User with email: {} already exists", customerDTO.getEmail());
+            throw new IllegalArgumentException("Email already exists.");
+        }
 
-        Customer customerUp = new Customer(customer.getId(), customer.getName(), customer.getEmail()
-                , customer.getPhone(), customer.getOrders());
-        return customerRepository.save(customerUp);
+        // Проверяю, есть ли такой номер у другого пользователя в базе
+        if (customerRepository.findByPhone(customerDTO.getPhone()).isPresent()) {
+            logger.warn("User with phone: {} already exists", customerDTO.getPhone());
+            throw new IllegalArgumentException("Phone already exists.");
+        }
+        // Создание нового пользователя
+        Customer customer = new Customer();
+        customer.setPhone(customerDTO.getPhone());
+        customer.setName(customerDTO.getName());
+        customer.setEmail(customerDTO.getEmail());
+
+        logger.info("Сохранен новый пользователь: {}", customer);
+        return customerRepository.save(customer);
     }
 
     // Поиск по id
     public Customer findById(Long id) {
-
         return customerRepository.findById(id).orElseThrow(() ->
                 new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
-//        return customerRepository.findById(id);
     }
 
     // Поиск по email
-    public Optional<Customer> findByEmail(String email) {
-        return customerRepository.findByEmail(email);
+    public Customer findByEmail(String email) {
+        return customerRepository.findByEmail(email).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
     }
 
     // Поиск по имени
-    public Optional<Customer> findByName(String name) {
-        return customerRepository.findByName(name);
+    public Customer findByName(String name) {
+        return customerRepository.findByName(name).orElseThrow(() ->
+                new ResponseStatusException(HttpStatus.NOT_FOUND, "Customer not found"));
     }
 
     // метод доработан, улучшена защита от удаления нужных данных
     // Добавлено логирование
+    // TODO: требует рефакторинг так как метод валидации перешел в распоряжение спрингу
     @Transactional
-    public Customer updateCustomer(Long id, Map<String, Object> updates) {
-
+    public Customer updateCustomer(Long id, CustomerDTO customerDTO) {
         Customer customer = customerRepository.findById(id).orElseThrow(() -> {
             logger.warn("Customer not found with ID: {}", id);
             return new EntityNotFoundException("Customer not found with ID:" + id);
         });
 
-        boolean updated = false;
+        // Проверка не находится ли в базе такой же емейл другого пользователя
+        customerRepository.findByEmail(customerDTO.getEmail())
+                .filter(customer1 -> !customer1.getId().equals(id))
+                .ifPresent(existing -> {
+                    logger.warn("Email {} is already reserved in the system by another user", customerDTO.getEmail());
+                    throw new IllegalArgumentException("Email is already in the database");
+                });
 
-        // Обновление мейла решил сделать таким образом, но мне кажется он напрасно усложненным сложным
-        if (updates.containsKey("email")) {
-            Object emailObject = updates.get("email");
-            if (emailObject instanceof String) {
-                String email = (String) emailObject;
-                customerValidator.validationEmail(email);
-                customer.setEmail(email);
-            } else {
-                throw new IllegalArgumentException("invalid email format. Expected a string.");
-            }
-            updated = true;
-        }
+        // Проверка не находится ли в базе такой же телефонный номер другого пользователя
+        customerRepository.findByPhone(customerDTO.getPhone())
+                .filter(customer1 -> !customer1.getId().equals(id))
+                .ifPresent(existing -> {
+                    logger.warn("Phone {} is already reserved in the system by another user", customerDTO.getPhone());
+                    throw new IllegalArgumentException("Phone is already in the database");
+                });
 
-        if (updates.containsKey("name")) {
-            customer.setName((String) updates.get("name"));
-            updated = true;
-        }
-
-        if (updates.containsKey("phone")) {
-            String phone = (String) updates.get("phone");
-            customerValidator.validatePhone(phone);
-            customer.setPhone(phone);
-            updated = true;
-        }
-
-        if (!updated) {
-            logger.warn("No changes detected for customer ID: {}", id);
+        if (!customerDTO.getName().isEmpty()) {
+            customer.setName(customerDTO.getName());
         }
 
         customerRepository.save(customer);
-        logger.info("Customer updated: ID: {} , Changes: {} ", id, updates);
+        logger.info("Customer updated: ID: {} , Changes: {} ", id, customerDTO);
 
         return customer;
     }
@@ -173,3 +166,34 @@ public String numberTelephoneValidationRussianFederation(String number) {
     }
 */
 
+/*  обновление полей в customer и валидация
+//        boolean updated = false;
+//        // Обновление мейла решил сделать таким образом, но мне кажется он напрасно усложненным сложным
+//        if (updates.containsKey("email")) {
+//            Object emailObject = updates.get("email");
+//            if (emailObject instanceof String) {
+//                String email = (String) emailObject;
+//                customerValidator.validationEmail(email);
+//                customer.setEmail(email);
+//            } else {
+//                throw new IllegalArgumentException("invalid email format. Expected a string.");
+//            }
+//            updated = true;
+//        }
+//        if (updates.containsKey("name")) {
+//            customer.setName((String) updates.get("name"));
+//            updated = true;
+//        }
+//        if (updates.containsKey("phone")) {
+//            String phone = (String) updates.get("phone");
+//            customerValidator.validatePhone(phone);
+//            customer.setPhone(phone);
+//            updated = true;
+//        }
+//        if (!updated) {
+//            logger.warn("No changes detected for customer ID: {}", id);
+//        }
+//        customerRepository.save(customer);
+//        logger.info("Customer updated: ID: {} , Changes: {} ", id, updates);
+//
+ */

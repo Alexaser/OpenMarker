@@ -3,7 +3,7 @@ package com.example.marketOrders.service;
 import com.example.marketOrders.entity.Customer;
 import com.example.marketOrders.entity.Order;
 import com.example.marketOrders.entity.OrderItem;
-import com.example.marketOrders.entity.StatusOrder;
+import com.example.marketOrders.entity.enums.StatusOrder;
 import com.example.marketOrders.repository.CustomerRepository;
 import com.example.marketOrders.repository.OrderRepository;
 import jakarta.persistence.EntityNotFoundException;
