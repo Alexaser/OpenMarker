@@ -22,10 +22,10 @@ public class CustomerController {
         this.customerService = customerService;
     }
 
-    @PostMapping
-    public void createCustomer(@Valid @RequestBody CustomerDTO CustomerDTO) {
-        customerService.createNewCustomer(CustomerDTO);
-    }
+//    @PostMapping
+//    public void createCustomer(@Valid @RequestBody CustomerDTO CustomerDTO) {
+//        customerService.createNewCustomer(CustomerDTO);
+//    }
 
     // получение пользователя по id
     @GetMapping("/{id}")

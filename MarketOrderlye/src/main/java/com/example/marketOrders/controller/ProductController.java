@@ -10,7 +10,6 @@ import java.util.List;
 @RequestMapping("/products")
 public class ProductController {
 
-
     final ProductService productService;
 
     public ProductController(ProductService productService) {
@@ -43,13 +42,13 @@ public class ProductController {
     }
 
     @DeleteMapping("{id}")
-    public void deleteProduct(@PathVariable Long id){
+    public void deleteProduct(@PathVariable Long id) {
         productService.deleteProduct(id);
     }
 
     @GetMapping("/filter")
-    public List<Product> filterToPrice(@RequestParam Integer minPrice, @RequestParam Integer maxPrice){
-        return productService.filterProductInPrice(minPrice,maxPrice);
+    public List<Product> filterToPrice(@RequestParam Integer minPrice, @RequestParam Integer maxPrice) {
+        return productService.filterProductInPrice(minPrice, maxPrice);
     }
 
 }

@@ -1,6 +1,5 @@
 package com.example.marketOrders.controller;
 
-import com.example.marketOrders.entity.Order;
 import com.example.marketOrders.entity.OrderItem;
 import com.example.marketOrders.service.OrderService;
 import org.springframework.stereotype.Controller;
@@ -13,7 +12,6 @@ import java.util.List;
 @Controller
 @RequestMapping("/orders")
 public class OrderController {
-
 
     private final OrderService orderService;
 

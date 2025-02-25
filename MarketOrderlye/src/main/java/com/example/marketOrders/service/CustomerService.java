@@ -10,6 +10,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
@@ -18,38 +19,17 @@ import org.springframework.web.server.ResponseStatusException;
 import java.util.List;
 
 @Service
+@Transactional
 public class CustomerService {
 
     private final CustomerRepository customerRepository;
     private static final Logger logger = LoggerFactory.getLogger(CustomerService.class);
 
+
     @Autowired
     public CustomerService(CustomerRepository customerRepository) {
         this.customerRepository = customerRepository;
-    }
 
-    // За валидацию теперь ответсвенен Spring и добавлен новый слой customerDTO
-    public Customer createNewCustomer(CustomerDTO customerDTO) {
-
-        // Проверяю, есть ли такой емейл у другого пользователя в базе
-        if (customerRepository.findByEmail(customerDTO.getEmail()).isPresent()) {
-            logger.warn("User with email: {} already exists", customerDTO.getEmail());
-            throw new IllegalArgumentException("Email already exists.");
-        }
-
-        // Проверяю, есть ли такой номер у другого пользователя в базе
-        if (customerRepository.findByPhone(customerDTO.getPhone()).isPresent()) {
-            logger.warn("User with phone: {} already exists", customerDTO.getPhone());
-            throw new IllegalArgumentException("Phone already exists.");
-        }
-        // Создание нового пользователя
-        Customer customer = new Customer();
-        customer.setPhone(customerDTO.getPhone());
-        customer.setName(customerDTO.getName());
-        customer.setEmail(customerDTO.getEmail());
-
-        logger.info("Сохранен новый пользователь: {}", customer);
-        return customerRepository.save(customer);
     }
 
     // Поиск по id
@@ -72,7 +52,7 @@ public class CustomerService {
 
     // метод доработан, улучшена защита от удаления нужных данных
     // Добавлено логирование
-    // TODO: требует рефакторинг так как метод валидации перешел в распоряжение спрингу
+    // TODO: требует рефакторинг так как метод валидации перешел в распоряжение спрингу, сделать DTO слой для updates
     @Transactional
     public Customer updateCustomer(Long id, CustomerDTO customerDTO) {
         Customer customer = customerRepository.findById(id).orElseThrow(() -> {
@@ -141,8 +121,35 @@ public class CustomerService {
 //        customerRepository.findAll(where())
 //    }
 
-
 }
+
+
+// За валидацию теперь ответсвенен Spring и добавлен новый слой customerDTO
+// на счет дто, я так думаю что тут должен быть новый DTO только тех данных которые нужны для регистрации
+// UPD - За регистрацию теперь ответственен RegistrationService
+//    @Transactional
+//    public Customer createNewCustomer(CustomerDTO customerDTO) {
+//
+//        // Проверяю, есть ли такой емейл у другого пользователя в базе
+//        if (customerRepository.findByEmail(customerDTO.getEmail()).isPresent()) {
+//            logger.warn("User with email: {} already exists", customerDTO.getEmail());
+//            throw new IllegalArgumentException("Email already exists.");
+//        }
+//
+//        // Проверяю, есть ли такой номер у другого пользователя в базе
+//        if (customerRepository.findByPhone(customerDTO.getPhone()).isPresent()) {
+//            logger.warn("User with phone: {} already exists", customerDTO.getPhone());
+//            throw new IllegalArgumentException("Phone already exists.");
+//        }
+//        // Создание нового пользователя
+//        Customer customer = new Customer();
+//        customer.setPhone(customerDTO.getPhone());
+//        customer.setName(customerDTO.getName());
+//        customer.setEmail(customerDTO.getEmail());
+//
+//        logger.info("Сохранен новый пользователь: {}", customer);
+//        return customerRepository.save(customer);
+//    }
 
 
 /* Валидация номера - переехала в дополнительный слой customerValidation

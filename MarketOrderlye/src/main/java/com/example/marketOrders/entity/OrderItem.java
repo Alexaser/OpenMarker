@@ -12,6 +12,7 @@ import lombok.*;
 @AllArgsConstructor
 
 public class OrderItem {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;

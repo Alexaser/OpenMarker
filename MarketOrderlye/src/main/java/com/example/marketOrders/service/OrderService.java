@@ -134,7 +134,6 @@ public class OrderService {
 
         logger.info("Order successfully deleted. Order ID: {}, Customer ID: {}", orderId, customerId);
         return "Order successfully deleted";
+
     }
-
-
 }
