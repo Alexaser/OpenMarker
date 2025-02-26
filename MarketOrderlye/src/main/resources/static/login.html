@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Вход</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        form { max-width: 300px; margin: auto; }
+        input, button { width: 100%; margin: 8px 0; padding: 10px; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+
+<h2>Вход</h2>
+
+<form id="loginForm">
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="password" id="password" placeholder="Пароль" required>
+    <button type="submit">Войти</button>
+</form>
+
+<p id="message"></p>
+
+<script>
+    document.getElementById("loginForm").addEventListener("submit", async function(event) {
+        event.preventDefault(); // 🔥 Останавливаем перезагрузку страницы
+
+        const email = document.getElementById("email").value;
+        const password = document.getElementById("password").value;
+        const messageElement = document.getElementById("message");
+
+        try {
+            const response = await fetch("http://localhost:8080/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password })
+            });
+
+            const data = await response.text(); // Получаем токен или ошибку
+
+            if (response.ok) {
+                localStorage.setItem("token", data); // ✅ Сохраняем токен в localStorage
+                messageElement.innerHTML = "✅ Вход выполнен успешно!";
+                messageElement.className = "success";
+                setTimeout(() => window.location.href = "/profile.html", 1000); // Перенаправляем на профиль
+            } else {
+                messageElement.innerHTML = "❌ " + data;
+                messageElement.className = "error";
+            }
+
+        } catch (error) {
+            messageElement.innerHTML = "❌ Ошибка соединения с сервером!";
+            messageElement.className = "error";
+        }
+    });
+</script>
+
+</body>
+</html>

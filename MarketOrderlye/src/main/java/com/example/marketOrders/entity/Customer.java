@@ -10,6 +10,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.UUID;
 
 // анотация только для отладки и настройки авторизации
 @EnableWebSecurity(debug = true)
@@ -27,6 +28,9 @@ public class Customer implements UserDetails {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(unique = true, updatable = false, nullable = false)
+    private UUID uuid = UUID.randomUUID();
 
     @Column(nullable = false)
     private String name;

@@ -11,6 +11,7 @@ import lombok.*;
 @NoArgsConstructor
 @AllArgsConstructor
 
+// Служит для связки заказа и товара
 public class OrderItem {
 
     @Id

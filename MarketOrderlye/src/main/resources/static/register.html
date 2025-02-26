@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Регистрация</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; }
+        form { max-width: 300px; margin: auto; }
+        input, button { width: 100%; margin: 8px 0; padding: 10px; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+
+<h2>Регистрация</h2>
+
+<form id="registerForm">
+    <input type="text" id="name" placeholder="Имя" required>
+    <input type="email" id="email" placeholder="Email" required>
+    <input type="text" id="phone" placeholder="Телефон (например, 79991234567)" required>
+    <input type="password" id="password" placeholder="Пароль" required>
+    <button type="submit">Зарегистрироваться</button>
+</form>
+
+<p id="message"></p>
+
+<script>
+    document.getElementById("registerForm").addEventListener("submit", async function(event) {
+        event.preventDefault(); // 🔥 Останавливаем перезагрузку страницы
+
+        // 📌 Получаем данные из формы
+        const name = document.getElementById("name").value;
+        const email = document.getElementById("email").value;
+        const phone = document.getElementById("phone").value;
+        const password = document.getElementById("password").value;
+
+        const messageElement = document.getElementById("message");
+
+        try {
+            // 📌 Отправляем запрос на сервер (POST /auth/register)
+            const response = await fetch("http://localhost:8080/auth/register", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name, email, phone, password })
+            });
+
+            const data = await response.text(); // Читаем ответ
+
+            if (response.ok) {
+                messageElement.innerHTML = "✅ " + data;
+                messageElement.className = "success";
+            } else {
+                messageElement.innerHTML = "❌ " + data;
+                messageElement.className = "error";
+            }
+
+        } catch (error) {
+            messageElement.innerHTML = "❌ Ошибка соединения с сервером!";
+            messageElement.className = "error";
+        }
+    });
+</script>
+
+</body>
+</html>

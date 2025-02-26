@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Профиль</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; text-align: center; }
+        .container { max-width: 400px; margin: auto; padding: 20px; border: 1px solid #ddd; border-radius: 10px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); }
+        button { margin-top: 10px; padding: 10px 20px; cursor: pointer; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Профиль</h2>
+    <p><strong>Имя:</strong> <span id="name"></span></p>
+    <p><strong>Email:</strong> <span id="email"></span></p>
+    <p><strong>Телефон:</strong> <span id="phone"></span></p>
+    <p><strong>Роль:</strong> <span id="role"></span></p>
+
+    <button onclick="logout()">Выйти</button>
+    <p class="error" id="error-message"></p>
+</div>
+
+<script>
+    async function loadProfile() {
+        const token = localStorage.getItem("token");
+        if (!token) {
+            window.location.href = "/login.html"; //  Если нет токена → редирект на логин
+            return;
+        }
+
+        try {
+            const response = await fetch("http://localhost:8080/customers/me", {
+                method: "GET",
+                headers: { "Authorization": "Bearer " + token }
+            });
+
+            if (!response.ok) {
+                throw new Error(await response.text());
+            }
+
+            const user = await response.json();
+
+            //  Заполняем страницу данными пользователя
+            document.getElementById("name").textContent = user.name;
+            document.getElementById("email").textContent = user.email;
+            document.getElementById("phone").textContent = user.phone;
+            document.getElementById("role").textContent = user.role;
+
+        } catch (error) {
+            document.getElementById("error-message").textContent = "Ошибка загрузки профиля: " + error.message;
+        }
+    }
+
+    function logout() {
+        localStorage.removeItem("token"); //  Удаляем токен
+        window.location.href = "/login.html"; //  Перенаправляем на логин
+    }
+
+    loadProfile(); //  Загружаем профиль при загрузке страницы
+</script>
+
+</body>
+</html>

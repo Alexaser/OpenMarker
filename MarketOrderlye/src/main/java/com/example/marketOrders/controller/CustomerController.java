@@ -4,11 +4,14 @@ import com.example.marketOrders.DTO.CustomerDTO;
 import com.example.marketOrders.entity.Customer;
 import com.example.marketOrders.service.CustomerService;
 import jakarta.persistence.EntityNotFoundException;
-import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
 
@@ -26,6 +29,12 @@ public class CustomerController {
 //    public void createCustomer(@Valid @RequestBody CustomerDTO CustomerDTO) {
 //        customerService.createNewCustomer(CustomerDTO);
 //    }
+
+
+    @GetMapping("/me")
+    public ResponseEntity<CustomerDTO> getCurrentUser(Authentication authentication) {
+        return customerService.getCurrentUser(authentication);
+    }
 
     // получение пользователя по id
     @GetMapping("/{id}")
@@ -46,12 +55,13 @@ public class CustomerController {
         return ResponseEntity.ok("Customer deleted successfully");
     }
 
+    @PreAuthorize("hasRole('ADMIN')")// использовать возможно только юзеру с правами админ
     @GetMapping
     public List<Customer> getAllCustomer() {
         return customerService.findAllCustomer();
     }
 
-    // GET	/customers/search?emaiel={email}	Найти клиента по email
+    // GET	/customers/search?email={email}	Найти клиента по email
     // TODO: доработать метод поиск по мейлу. В целом весь класс контроллера надо типизировать
     @GetMapping("/search")
     public Customer searchMail(@RequestParam String mail) {

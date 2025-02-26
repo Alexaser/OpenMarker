@@ -10,9 +10,14 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.User;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.server.ResponseStatusException;
 
 
@@ -53,38 +58,64 @@ public class CustomerService {
     // метод доработан, улучшена защита от удаления нужных данных
     // Добавлено логирование
     // TODO: требует рефакторинг так как метод валидации перешел в распоряжение спрингу, сделать DTO слой для updates
-    @Transactional
-    public Customer updateCustomer(Long id, CustomerDTO customerDTO) {
-        Customer customer = customerRepository.findById(id).orElseThrow(() -> {
-            logger.warn("Customer not found with ID: {}", id);
-            return new EntityNotFoundException("Customer not found with ID:" + id);
-        });
+//    @Transactional
+//    public Customer updateCustomer(Long id, CustomerDTO customerDTO) {
+//        Customer customer = customerRepository.findById(id).orElseThrow(() -> {
+//            logger.warn("Customer not found with ID: {}", id);
+//            return new EntityNotFoundException("Customer not found with ID:" + id);
+//        });
+//
+//        // Проверка не находится ли в базе такой же емейл другого пользователя
+//        customerRepository.findByEmail(customerDTO.getEmail())
+//                .filter(customer1 -> !customer1.getId().equals(id))
+//                .ifPresent(existing -> {
+//                    logger.warn("Email {} is already reserved in the system by another user", customerDTO.getEmail());
+//                    throw new IllegalArgumentException("Email is already in the database");
+//                });
+//
+//        // Проверка не находится ли в базе такой же телефонный номер другого пользователя
+//        customerRepository.findByPhone(customerDTO.getPhone())
+//                .filter(customer1 -> !customer1.getId().equals(id))
+//                .ifPresent(existing -> {
+//                    logger.warn("Phone {} is already reserved in the system by another user", customerDTO.getPhone());
+//                    throw new IllegalArgumentException("Phone is already in the database");
+//                });
+//
+//        if (!customerDTO.getName().isEmpty()) {
+//            customer.setName(customerDTO.getName());
+//        }
+//
+//        customerRepository.save(customer);
+//        logger.info("Customer updated: ID: {} , Changes: {} ", id, customerDTO);
+//
+//        return customer;
+//    }
 
-        // Проверка не находится ли в базе такой же емейл другого пользователя
-        customerRepository.findByEmail(customerDTO.getEmail())
-                .filter(customer1 -> !customer1.getId().equals(id))
-                .ifPresent(existing -> {
-                    logger.warn("Email {} is already reserved in the system by another user", customerDTO.getEmail());
-                    throw new IllegalArgumentException("Email is already in the database");
-                });
+//  получение данных для страницы личного кабинета юзера
+    public ResponseEntity<CustomerDTO> getCurrentUser(Authentication authentication) {
+        if (authentication == null || !authentication.isAuthenticated()) {
+            logger.warn("[CustomerService] Unauthorized access attempt to user profile.");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+        String email = authentication.getName();
+        logger.info("[CustomerService] Fetching profile for user: {}", email);
+        try {
+            Customer customer = customerRepository.findByEmail(email).orElseThrow(() ->
+                    new EntityNotFoundException("User not found: " + email));
 
-        // Проверка не находится ли в базе такой же телефонный номер другого пользователя
-        customerRepository.findByPhone(customerDTO.getPhone())
-                .filter(customer1 -> !customer1.getId().equals(id))
-                .ifPresent(existing -> {
-                    logger.warn("Phone {} is already reserved in the system by another user", customerDTO.getPhone());
-                    throw new IllegalArgumentException("Phone is already in the database");
-                });
-
-        if (!customerDTO.getName().isEmpty()) {
-            customer.setName(customerDTO.getName());
+            CustomerDTO customerDTO = new CustomerDTO(customer);
+            logger.info("[CustomerService] User profile retrieved successfully: email={}, name={}", email, customer.getName());
+            return ResponseEntity.ok(customerDTO);
+        } catch (EntityNotFoundException e) {
+            logger.warn("[CustomerService] User not found: {}", email);
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        } catch (Exception e) {
+            logger.error("[CustomerService] Error retrieving user profile: email={}, error={}", email, e.getMessage());
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
         }
 
-        customerRepository.save(customer);
-        logger.info("Customer updated: ID: {} , Changes: {} ", id, customerDTO);
-
-        return customer;
     }
+
 
     // Удаление пользователя по id
     @Transactional
@@ -115,6 +146,21 @@ public class CustomerService {
     public List<Customer> hasNameContaining(String trimName) {
         return customerRepository.findAll(CustomerSpecification.hasNameContaining(trimName));
     }
+
+
+//    @GetMapping("/me")
+//    public ResponseEntity<CustomerDTO> getCurrentUser(Authentication authentication) {
+//        if (authentication == null || !authentication.isAuthenticated()) {
+//            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+//        }
+//
+//        String email = authentication.getName();
+//        Customer customer = customerService.findByEmail(email);
+//        System.out.println("joi");
+//        CustomerDTO customerDTO = new CustomerDTO(
+//                customer.getName(), customer.getEmail(), customer.getPhone(), customer.getRole().name());
+//        return ResponseEntity.ok(customerDTO);
+//    }
 
 
 //    public List<Customer> filterCustomer(){
