@@ -14,7 +14,7 @@ import java.util.List;
 @NoArgsConstructor
 @EqualsAndHashCode
 
-
+// TODO : добавить характеристики, продавца, изображений может быть несколько
 public class Product {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -27,12 +27,18 @@ public class Product {
     private String description;
 
     @Column(nullable = false)
-    private int price;
+    private double price;
 
     @Column(length = 500)
     private String imageUrl;
 
     @OneToMany(mappedBy = "product", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<OrderItem> items;
+
+    @Column(nullable = false, unique = true)
+    private String article;  // уникальное значение по которому осуществляется поиск товара
+
+    @OneToMany(mappedBy = "product",cascade = CascadeType.ALL,orphanRemoval = true)
+    private List<Review> review;
 
 }

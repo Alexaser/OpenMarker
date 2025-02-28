@@ -30,15 +30,15 @@ public class Customer implements UserDetails {
     private Long id;
 
     @Column(unique = true, updatable = false, nullable = false)
-    private UUID uuid = UUID.randomUUID();
+    private final UUID uuid = UUID.randomUUID();
 
     @Column(nullable = false)
     private String name;
 
-    @Column(unique = true,nullable = false)
+    @Column(unique = true, nullable = false)
     private String email;
 
-    @Column(unique = true,nullable = false)
+    @Column(unique = true, nullable = false)
     private String phone;
 
     @Column(nullable = false)
@@ -51,6 +51,9 @@ public class Customer implements UserDetails {
 
     @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private List<Order> orders;
+
+    @OneToMany(mappedBy = "customer", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
+    private List<Review> review;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
