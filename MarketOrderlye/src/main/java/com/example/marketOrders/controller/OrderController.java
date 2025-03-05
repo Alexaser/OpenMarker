@@ -22,5 +22,7 @@ public class OrderController {
     @PostMapping
     public void createOrder(@RequestBody Long customerId, @RequestBody List<OrderItem> orderItemList) {
         orderService.createOrder(customerId, orderItemList);
+
+        System.out.println();
     }
 }
